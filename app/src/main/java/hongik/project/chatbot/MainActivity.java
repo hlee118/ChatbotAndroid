@@ -27,11 +27,16 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
 
     private JSONObject response_object;
-    private Thread mThread = null;
     private EditText edit_query;
     private Button btn_confirm;
     private ListView mListView;
     private ListViewAdapter adapter;
+    private Thread mThread;
+
+    private final int DOBBY = 0;
+    private final int WIKI = 1;
+    private final int SEQ2SEQ = 2;
+    private final String[] NAMES = {"Dobby", "Wiki", "Seq2Seq"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
                 edit_query.setText("");
                 adapter.addItem(query, "me");
                 adapter.notifyDataSetChanged();
-                setQuery(query);
+                getAnswers(query);
             }
         });
 
@@ -56,17 +61,36 @@ public class MainActivity extends AppCompatActivity {
         mListView.setAdapter(adapter);
     }
 
-    public void setQuery(final String query){
+    public void getAnswers(final String query){
+        // dobby
         mThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                getAnswer(query);
+                requestAnswer(query, URL.DOBBY, DOBBY);
+            }
+        });
+        mThread.start();
+
+        // wiki
+        mThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                requestAnswer(query, URL.WIKI, WIKI);
+            }
+        });
+        mThread.start();
+
+        // seq2seq
+        mThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                requestAnswer(query, URL.SEQ2SEQ, SEQ2SEQ);
             }
         });
         mThread.start();
     }
 
-    public void getAnswer(String query){
+    public void requestAnswer(String query, String url, int type){
         try {
             OkHttpClient client = new OkHttpClient();
             RequestBody req_body = new FormBody.Builder()
@@ -74,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
                     .build();
 
             Request request = new Request.Builder()
-                    .url(URL.SERVER)
+                    .url(url)
                     .post(req_body)
                     .build();
 
@@ -82,7 +106,8 @@ public class MainActivity extends AppCompatActivity {
             String response_string = response.body().string();
 
             response_object = new JSONObject(response_string);
-            handler.sendEmptyMessage(response_object.getInt("result"));
+            handler.setObj(response_object);
+            handler.sendEmptyMessage(type);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (JSONException e) {
@@ -90,27 +115,29 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private static class CustomHandler extends Handler {
+        private JSONObject obj = null;
+        void setObj(JSONObject obj){
+            this.obj = obj;
+        }
+
+        JSONObject getObj(){
+            return this.obj;
+        }
+    }
+
     @SuppressLint("HandlerLeak")
-    private final Handler handler = new Handler() {
+    CustomHandler handler = new CustomHandler() {
         @Override
         public void handleMessage(final Message msg) {
-            switch (msg.what) {
-                case 0:
-                    try {
-                        JSONObject data = response_object.getJSONObject("data");
-                        JSONObject dobby = data.getJSONObject("dobby");
-                        JSONObject wiki = data.getJSONObject("wiki");
-//                        dobby.getDouble("accuracy");
-//                        wiki.getDouble("accuracy");
-
-                        adapter.addItem(dobby.getString("answer"), "Dobby");
-                        adapter.addItem(wiki.getString("answer"), "Wiki");
-                        adapter.notifyDataSetChanged();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                    break;
+            try {
+                adapter.addItem(this.getObj().getString("answer"), NAMES[msg.what]);
+                adapter.notifyDataSetChanged();
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
         }
     };
+
+
 }

@@ -39,11 +39,13 @@ public class ListViewAdapter extends BaseAdapter {
         itemName.setText(listViewItem.getName());
 
         if (listViewItem.getName().equals("me")) {
-            listViewItemLayout.setGravity(Gravity.RIGHT);
-            itemText.setBackgroundColor(Color.rgb(255,255,0));
+            listViewItemLayout.setGravity(Gravity.END);
+            itemText.setBackgroundResource(R.drawable.me_box);
+            itemText.setTextColor(0xffffffff);
         } else {
-            listViewItemLayout.setGravity(Gravity.LEFT);
-            itemText.setBackgroundColor(Color.rgb(200,200,200));
+            listViewItemLayout.setGravity(Gravity.START);
+            itemText.setBackgroundResource(R.drawable.chatbot_box);
+            itemText.setTextColor(0xff000000);
         }
 
         return convertView;
