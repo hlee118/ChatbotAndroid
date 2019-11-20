@@ -26,7 +26,6 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    private JSONObject response_object;
     private EditText edit_query;
     private Button btn_confirm;
     private ListView mListView;
@@ -105,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
             Response response = client.newCall(request).execute();
             String response_string = response.body().string();
 
-            response_object = new JSONObject(response_string);
+            JSONObject response_object = new JSONObject(response_string);
             handler.setObj(response_object);
             handler.sendEmptyMessage(type);
         } catch (IOException e) {
